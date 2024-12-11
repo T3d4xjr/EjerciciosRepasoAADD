@@ -78,59 +78,32 @@ public class Empleado_proyectoDAO {
         }
     }
 
-    public static void añadirEmpleadosAProyecto(int idProyecto, String empleados) {
-        String sqlProyectoExistente = "SELECT id FROM proyecto WHERE id = ?";
-        String sqlEmpleadoProyecto = "INSERT INTO empleado_proyecto (id_empleado, id_proyecto) VALUES (?, ?)";
-
+    public static void añadirEmpleadosAProyecto(int idProyecto, String empleados) throws SQLException {
+         
         try {
-            // Verificar si el proyecto existe
-            PreparedStatement stmtProyectoExistente = Conexion.getPreparedStatement(sqlProyectoExistente);
-            stmtProyectoExistente.setInt(1, idProyecto);
-
-            ResultSet rsProyecto = stmtProyectoExistente.executeQuery();
-
-            if (!rsProyecto.next()) {
-                System.err.println("Error: El proyecto con ID " + idProyecto + " no existe.");
-                
-            }
+            Conexion.startTransaction();
 
             // Si el proyecto existe, continuar insertando empleados
             String[] idsEmpleados = empleados.split(" ");  // Separar los IDs de empleados
             
+            String sqlEmpleadoProyecto = "INSERT INTO empleado_proyecto (id_empleado, id_proyecto) VALUES (?, ?)";
             PreparedStatement stmtEmpleadoProyecto = Conexion.getPreparedStatement(sqlEmpleadoProyecto);
-             
+                  
             for (String idEmp : idsEmpleados) {
-                try {
+              
                     int idEmpleado = Integer.parseInt(idEmp.trim());
-
-                    // Verificar si el empleado existe
-                    String sqlEmpleadoExistente = "SELECT id FROM empleado WHERE id = ?";
-                    PreparedStatement stmtEmpleadoExistente = Conexion.getPreparedStatement(sqlEmpleadoExistente);
-                    stmtEmpleadoExistente.setInt(1, idEmpleado);
-
-                    ResultSet rsEmpleado = stmtEmpleadoExistente.executeQuery();
-
-                    if (!rsEmpleado.next()) {
-                        System.err.println("Error: El empleado con ID " + idEmpleado + " no existe.");
-                        
-                    }
-
-                    // Insertar la relación empleado-proyecto
-                   
+                    
+                    // Insertar la relación empleado-proyectp
                     stmtEmpleadoProyecto.setInt(1, idEmpleado);
                     stmtEmpleadoProyecto.setInt(2, idProyecto);
                     stmtEmpleadoProyecto.addBatch();
-
-                    
-
-                } catch (NumberFormatException e) {
-                    System.err.println("Error: El ID del empleado " + idEmp + " no es válido.");
-                }
+                
             }
             int[] rowEmpleado = stmtEmpleadoProyecto.executeBatch();
-
+            Conexion.commit();
         } catch (SQLException e) {
             System.err.println("Error en la base de datos: " + e.getMessage());
+            Conexion.rollback();
         }
     }
 
